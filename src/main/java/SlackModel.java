@@ -9,9 +9,14 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
+//TODO:  search by user,  api for user id by name             search by time period     TFIDF lib for word count
+
+
 public class SlackModel {
-    final String OAuthToken = "xoxp-741285264438-739107245509-821721964039-5b9ca93766a54da4bd962bdb842f6e76";
-    final String botToken = "xoxb-741285264438-808394586211-RAfo6hstnR4NYoZrDpRyB1YD";
+    final String OAuthToken = "xoxp-741285264438-739107245509-824357041328-ead74a2ce64a432e4bde6585e88f2f59";
+    final String botToken = "xoxb-741285264438-808394586211-8FmrY7fjSikvVLBIGJISB4S4";
     public static void main(String[] args){
         SlackModel slackModel = new SlackModel();
 //        slackModel.getChannelList();
@@ -19,14 +24,17 @@ public class SlackModel {
 //        System.out.println(slackModel.getChannelIDByName("capstone"));
 //        slackModel.getChannelMessageHistory("CMR6SBLRJ");
 //        slackModel.getMessageTextList("CMR6SBLRJ");
-        slackModel.getMessageContainsWord("meeting","CMR6SBLRJ");
+//        slackModel.getMessageContainsWord("meeting","CMR6SBLRJ");
+//        slackModel.getAllUserInfo();
+        System.out.println(slackModel.getUserEmail(slackModel.getUserID("Xiangyue Meng")));
+        System.out.println(slackModel.getUserEmail(slackModel.getUserID("Xiangyum")));
     }
 
 
     private JSONArray getChannelList(){
         String urlString = "https://slack.com/api/channels.list?token=" + botToken;
         String response = getResponseString(urlString);
-//        System.out.println(response);
+        System.out.println(response);
         JSONObject jsonObject = new JSONObject(response);
         //TODO: find a more graceful way to handle exception, when we can not get channels, might be other reasons
         try{
@@ -87,9 +95,9 @@ public class SlackModel {
             JSONObject jsonObject = messageJSONArray.getJSONObject(i);
             result.add(jsonObject.get("text").toString());
         }
-//        for(int i = 0; i < result.size(); i++){
-//            System.out.println(result.get(i));
-//        }
+        for(int i = 0; i < result.size(); i++){
+            System.out.println(result.get(i));
+        }
         return result;
     }
 
@@ -108,7 +116,8 @@ public class SlackModel {
         } catch (IOException e) {
             System.out.println(e.toString());
         }
-       return response;
+//        System.out.println(response);
+        return response;
     }
 
     private List<String> getMessageContainsWord(String keyword, String channelID){
@@ -122,9 +131,56 @@ public class SlackModel {
                 result.add(str);
             }
         }
-//        for(String str: result){
-//            System.out.println(str);
-//        }
+        for(String str: result){
+            System.out.println(str);
+        }
         return result;
+    }
+
+    private JSONArray getAllUserInfo(){
+        String urlStr = "https://slack.com/api/users.list?token=" + OAuthToken;
+        String response = getResponseString(urlStr);
+        JSONObject jsonObject = new JSONObject(response);
+        JSONArray result = new JSONArray();
+        try{
+            JSONArray rawJSONArray = jsonObject.getJSONArray("members");
+            for(int i = 0; i < rawJSONArray.length(); i++){
+                JSONObject user = rawJSONArray.getJSONObject(i);
+                JSONObject tmp = new JSONObject();
+                tmp.put("name", user.get("name").toString());
+                tmp.put("realName", user.get("real_name").toString());
+                tmp.put("id", user.get("id").toString());
+                try{
+                    tmp.put("email", user.getJSONObject("profile").get("email"));
+                }catch (Exception e){
+                    tmp.put("email", "");
+                }
+                result.put(tmp);
+            }
+        }catch(Exception e){
+            return null;
+        }
+        return result;
+    }
+
+    private String getUserEmail(String userID){
+        JSONArray userInfoList = getAllUserInfo();
+        for(int i = 0; i < userInfoList.length(); i++){
+            if(userInfoList.getJSONObject(i).get("id").toString().equals(userID)){
+                return userInfoList.getJSONObject(i).get("email").toString();
+            }
+        }
+        return null;
+    }
+
+    private String getUserID(String userName){
+        JSONArray userInfoList = getAllUserInfo();
+        for(int i = 0; i < userInfoList.length(); i++){
+            if(userInfoList.getJSONObject(i).get("name").toString().equalsIgnoreCase(userName) ||
+                userInfoList.getJSONObject(i).get("realName").toString().equalsIgnoreCase(userName)){
+                return userInfoList.getJSONObject(i).get("id").toString();
+            }
+        }
+        return null;
     }
 }
