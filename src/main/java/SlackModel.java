@@ -11,12 +11,12 @@ import java.util.List;
 
 
 
-//TODO:  search by user,  api for user id by name             search by time period     TFIDF lib for word count
+//TODO:  search by time period     TFIDF lib for word count
 
 
 public class SlackModel {
-    final String OAuthToken = "xoxp-741285264438-739107245509-824357041328-ead74a2ce64a432e4bde6585e88f2f59";
-    final String botToken = "xoxb-741285264438-808394586211-8FmrY7fjSikvVLBIGJISB4S4";
+    final String OAuthToken = "xoxp-741285264438-739107245509-826633129719-ab86daa4c72f964994e8019f6115bbea";
+    final String botToken = "xoxb-741285264438-808394586211-z1XhJ8kzsl1Q9J9Zn7O8CRWu";
     public static void main(String[] args){
         SlackModel slackModel = new SlackModel();
 //        slackModel.getChannelList();
@@ -26,12 +26,13 @@ public class SlackModel {
 //        slackModel.getMessageTextList("CMR6SBLRJ");
 //        slackModel.getMessageContainsWord("meeting","CMR6SBLRJ");
 //        slackModel.getAllUserInfo();
-        System.out.println(slackModel.getUserEmail(slackModel.getUserID("Xiangyue Meng")));
-        System.out.println(slackModel.getUserEmail(slackModel.getUserID("Xiangyum")));
+//        System.out.println(slackModel.getUserEmail(slackModel.getUserID("Xiangyue Meng")));
+//        System.out.println(slackModel.getUserEmail(slackModel.getUserID("Xiangyum")));
+        slackModel.filterRawMessage("CMR6SBLRJ");
     }
 
 
-    private JSONArray getChannelList(){
+    public JSONArray getChannelList(){
         String urlString = "https://slack.com/api/channels.list?token=" + botToken;
         String response = getResponseString(urlString);
         System.out.println(response);
@@ -47,7 +48,7 @@ public class SlackModel {
     }
 
 
-    private List<String> getChannelNames(){
+    public List<String> getChannelNames(){
         JSONArray channelListJSONArray = getChannelList();
         List<String> result = new ArrayList<String>();
         for(int i = 0; i < channelListJSONArray.length(); i++){
@@ -60,7 +61,7 @@ public class SlackModel {
     }
 
     //If not found, return null
-    private String getChannelIDByName(String channelName){
+    public String getChannelIDByName(String channelName){
         JSONArray channelListJSONArray = getChannelList();
         for(int i = 0; i < channelListJSONArray.length(); i++){
             if(channelListJSONArray.getJSONObject(i).get("name").toString().equals(channelName)){
@@ -70,7 +71,7 @@ public class SlackModel {
         return null;
     }
 
-    private JSONArray getChannelMessageHistory(String channelID){
+    public JSONArray getChannelMessageHistory(String channelID){
         String urlString = "https://slack.com/api/channels.history?token=" + OAuthToken + "&channel=" + channelID;
         String response = getResponseString(urlString);
 //        System.out.println(response);
@@ -85,7 +86,7 @@ public class SlackModel {
 
     }
 
-    private List<String> getMessageTextList(String channelID){
+    public List<String> getMessageTextList(String channelID){
         JSONArray messageJSONArray = getChannelMessageHistory(channelID);
         if(messageJSONArray == null){
             return null;
@@ -101,7 +102,23 @@ public class SlackModel {
         return result;
     }
 
-    private String getResponseString(String urlString){
+    public JSONArray filterRawMessage(String channelID){
+        JSONArray rawMessageList = getChannelMessageHistory(channelID);
+        JSONArray result = new JSONArray();
+        for(int i = 0; i < rawMessageList.length(); i++){
+            JSONObject messageJSON = rawMessageList.getJSONObject(i);
+            if(messageJSON.keySet().contains("client_msg_id")){
+                JSONObject tmp = new JSONObject();
+                tmp.put("timeStamp", messageJSON.get("ts").toString());
+                tmp.put("userID", messageJSON.get("user").toString());
+                tmp.put("text", messageJSON.get("text").toString());
+                result.put(tmp);
+            }
+        }
+        return result;
+    }
+
+    public String getResponseString(String urlString){
         String response = "";
         try {
 //            System.out.println(urlString);
@@ -120,7 +137,7 @@ public class SlackModel {
         return response;
     }
 
-    private List<String> getMessageContainsWord(String keyword, String channelID){
+    public List<String> getMessageContainsWord(String keyword, String channelID){
         List<String> messageTextList = getMessageTextList(channelID);
         if(messageTextList == null){
             return null;
@@ -137,7 +154,7 @@ public class SlackModel {
         return result;
     }
 
-    private JSONArray getAllUserInfo(){
+    public JSONArray getAllUserInfo(){
         String urlStr = "https://slack.com/api/users.list?token=" + OAuthToken;
         String response = getResponseString(urlStr);
         JSONObject jsonObject = new JSONObject(response);
@@ -163,7 +180,7 @@ public class SlackModel {
         return result;
     }
 
-    private String getUserEmail(String userID){
+    public String getUserEmail(String userID){
         JSONArray userInfoList = getAllUserInfo();
         for(int i = 0; i < userInfoList.length(); i++){
             if(userInfoList.getJSONObject(i).get("id").toString().equals(userID)){
@@ -173,7 +190,7 @@ public class SlackModel {
         return null;
     }
 
-    private String getUserID(String userName){
+    public String getUserID(String userName){
         JSONArray userInfoList = getAllUserInfo();
         for(int i = 0; i < userInfoList.length(); i++){
             if(userInfoList.getJSONObject(i).get("name").toString().equalsIgnoreCase(userName) ||
