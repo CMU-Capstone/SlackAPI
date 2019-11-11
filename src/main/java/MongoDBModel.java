@@ -3,6 +3,7 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -43,6 +44,8 @@ public class MongoDBModel {
         collection.insertMany(documents);
         mongoClient.close();
     }
+
+
     public JSONArray getCollectionData(String collectionName){
         MongoClientURI uri = new MongoClientURI(MongoURL);
         MongoClient mongoClient = new MongoClient(uri);
@@ -63,6 +66,33 @@ public class MongoDBModel {
 //        System.out.println(collection.count());
         mongoClient.close();
         return res;
+    }
+
+    public void deleteAll(String collectionName){
+        MongoClientURI uri = new MongoClientURI(MongoURL);
+        MongoClient mongoClient = new MongoClient(uri);
+        MongoDatabase database = mongoClient.getDatabase("SlackDatabase");
+        MongoCollection<Document> collection = database.getCollection(collectionName);
+        collection.deleteMany(new Document());
+    }
+
+    public String getNewestTimeStamp(String collectionName){
+        MongoClientURI uri = new MongoClientURI(MongoURL);
+        MongoClient mongoClient = new MongoClient(uri);
+        MongoDatabase database = mongoClient.getDatabase("SlackDatabase");
+        MongoCollection<Document> collection = database.getCollection(collectionName);
+        Document doc = collection.find().sort(Sorts.descending("timeStamp")).first();
+        if(doc == null){
+            return "0";
+        }
+        JSONObject jsonObject = new JSONObject(doc.toJson());
+//        System.out.println(jsonObject.get("text").toString());
+        if(jsonObject.keySet().contains("timeStamp")){
+            return jsonObject.get("timeStamp").toString();
+        }
+        else{
+            return "0";
+        }
     }
 
 }
